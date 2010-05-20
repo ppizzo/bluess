@@ -1,0 +1,91 @@
+#!/bin/bash
+#
+# bluess 0.4
+#
+# This script uses bluetooth to detect mobile phone presence and makes
+# the following actions:
+#
+#  - locks the screen if the phone goes out of range
+#  - unlocks the screen when the phone returns in range
+#
+# This script allows lazy people, who often forget to lock the screen
+# when they leave the workstation unattended to have a coffee, to get
+# their workstation secured with little effort (it is only required to
+# configure and start this program). You could also configure different
+# actions instead of screensaver lock/unlock.
+#
+# Depends: bluez
+#
+# 2010, Pietro Pizzo <pietro.pizzo@gmail.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+########################################################################
+
+# MAC address of the phone
+macaddress="xx:xx:xx:xx:xx:xx"
+
+# Time interval between checks (seconds) when the mobile is in range
+poll_time_in=45
+
+# Time interval between checks (seconds) when the mobile is out of range
+poll_time_out=5
+
+# Screensaver lock command (or whatever you immagination suggests you
+screensaver_lock_command="gnome-screensaver-command --lock"
+
+# Screensaver unlock command (or wathever...)
+screensaver_unlock_command="gnome-screensaver-command --deactivate"
+
+# Istant messaging away status set
+im_away_command="purple-remote setstatus?status=away&message="
+
+# Istant messaging available status set
+im_available_command="purple-remote setstatus?status=available&message="
+
+# Log files
+log_file=/tmp/`basename $0`.log
+error_file=/tmp/`basename $0`-error.log
+
+# You shouldn't need to modify anything below this line
+########################################################################
+
+poll_time=$poll_time_in
+
+echo "`date`: `basename $0` started" >>${log_file}
+
+while :
+do
+    # Read mobile presence
+    result=`hcitool name $macaddress` >>${error_file} 2>&1
+
+    # Detect status change and activate/deactivate screensaver accordingly
+    if [ "${result}" != "${last_result}" ]; then
+        if [ "${result}" == "" ]; then
+	    echo "`date`: screen locked" >>${log_file}
+            $screensaver_lock_command >>${error_file} 2>&1
+	    $im_away_command >>${error_file} 2>&1
+	    poll_time=$poll_time_out
+        else
+	    echo "`date`: screen unlocked" >>${log_file}
+            $screensaver_unlock_command >>${error_file} 2>&1
+	    $im_available_command >>${error_file} 2>&1
+	    poll_time=$poll_time_in
+	fi
+    fi
+    
+    # Save the status
+    last_result=$result
+
+    sleep $poll_time
+done
