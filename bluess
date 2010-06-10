@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# bluess 0.4
+# bluess 0.5
 #
 # This script uses bluetooth to detect mobile phone presence and makes
 # the following actions:
@@ -32,6 +32,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ########################################################################
 
+# Options default values.
+# Override them in ~/.bluessrc using the same syntax (i.e. name="val")
+
 # MAC address of the phone
 macaddress="xx:xx:xx:xx:xx:xx"
 
@@ -60,9 +63,21 @@ error_file=/tmp/`basename $0`-error.log
 # You shouldn't need to modify anything below this line
 ########################################################################
 
-poll_time=$poll_time_in
+user_options=${HOME}/.bluessrc
 
 echo "`date`: `basename $0` started" >>${log_file}
+
+# Read user options
+if [ -r  $user_options ]; then
+    source $user_options
+    if [ "$?" -ne "0" ]; then
+	echo "Error reading user preferences from ${user_options}" >>${log_file}
+    else
+	echo "User preferences read from ${user_options}" >>${log_file}
+    fi
+fi
+
+poll_time=$poll_time_in
 
 while :
 do
@@ -73,13 +88,13 @@ do
     if [ "${result}" != "${last_result}" ]; then
         if [ "${result}" == "" ]; then
 	    echo "`date`: screen locked" >>${log_file}
-            $screensaver_lock_command >>${error_file} 2>&1
-	    $im_away_command >>${error_file} 2>&1
+            sh -c "${screensaver_lock_command}" >>${error_file} 2>&1
+            sh -c "${im_away_command}" >>${error_file} 2>&1
 	    poll_time=$poll_time_out
         else
 	    echo "`date`: screen unlocked" >>${log_file}
-            $screensaver_unlock_command >>${error_file} 2>&1
-	    $im_available_command >>${error_file} 2>&1
+            sh -c "${screensaver_unlock_command}" >>${error_file} 2>&1
+            sh -c "${im_available_command}" >>${error_file} 2>&1
 	    poll_time=$poll_time_in
 	fi
     fi
