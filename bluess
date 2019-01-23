@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# bluess 0.5
+# bluess 0.6
 #
 # This script uses bluetooth to detect mobile phone presence and makes
 # the following actions:
@@ -16,7 +16,7 @@
 #
 # Depends: bluez
 #
-# 2010, Pietro Pizzo <pietro.pizzo@gmail.com>
+# 2010-2019 Pietro Pizzo <pietro.pizzo@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,11 +25,11 @@
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
 ########################################################################
 
 # Options default values.
@@ -46,7 +46,7 @@ poll_time_in=30
 poll_time_out=5
 
 # Screensaver lock command (or whatever you immagination suggests you
-screensaver_lock_command="loginctl lock-session"
+screensaver_lock_command="loginctl lock-session; xset dpms force off"
 
 # Screensaver unlock command (or wathever...)
 screensaver_unlock_command="loginctl unlock-session; xset dpms force on"
@@ -66,9 +66,9 @@ echo "`date`: `basename $0` started" >>${log_file}
 if [ -r  $user_options ]; then
     source $user_options
     if [ "$?" -ne "0" ]; then
-	echo "Error reading user preferences from ${user_options}" >>${log_file}
+        echo "Error reading user preferences from ${user_options}" >>${log_file}
     else
-	echo "User preferences read from ${user_options}" >>${log_file}
+        echo "User preferences read from ${user_options}" >>${log_file}
     fi
 fi
 
@@ -83,19 +83,19 @@ do
     if [ "${result}" != "${last_result}" ]; then
         if [ "${result}" == "" ]; then
 
-	    # Perform another scan to avoid "false negatives" and temporary scan problems
-	        sleep 5; result=`hcitool name $macaddress` >>${error_file} 2>&1
+            # Perform another scan to avoid "false negatives" and temporary scan problems
+            sleep 5; result=`hcitool name $macaddress` >>${error_file} 2>&1
 
             if [ "${result}" == "" ]; then
-		        echo "`date`: screen locked" >>${log_file}
-		        sh -c "${screensaver_lock_command}" >>${error_file} 2>&1
-		        poll_time=$poll_time_out
-	        fi
+                echo "`date`: screen locked" >>${log_file}
+                sh -c "${screensaver_lock_command}" >>${error_file} 2>&1
+                poll_time=$poll_time_out
+            fi
         else
-	        echo "`date`: screen unlocked" >>${log_file}
+            echo "`date`: screen unlocked" >>${log_file}
             sh -c "${screensaver_unlock_command}" >>${error_file} 2>&1
-	        poll_time=$poll_time_in
-	    fi
+            poll_time=$poll_time_in
+        fi
     fi
 
     # Save the status
