@@ -22,39 +22,34 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ########################################################################
 
 # Options default values.
-# Override them in ~/.bluessrc using the same syntax (i.e. name="val")
+# Override them in ~/.bluessrc using the same syntax
+# (i.e. name="val" without spaces around "=")
 
 # MAC address of the phone
 macaddress="xx:xx:xx:xx:xx:xx"
 
 # Time interval between checks (seconds) when the mobile is in range
-poll_time_in=45
+poll_time_in=30
 
 # Time interval between checks (seconds) when the mobile is out of range
 poll_time_out=5
 
 # Screensaver lock command (or whatever you immagination suggests you
-screensaver_lock_command="gnome-screensaver-command --lock"
+screensaver_lock_command="loginctl lock-session"
 
 # Screensaver unlock command (or wathever...)
-screensaver_unlock_command="gnome-screensaver-command --deactivate"
-
-# Istant messaging away status set
-im_away_command="purple-remote setstatus?status=away&message="
-
-# Istant messaging available status set
-im_available_command="purple-remote setstatus?status=available&message="
+screensaver_unlock_command="loginctl unlock-session; xset dpms force on"
 
 # Log files
 log_file=/tmp/`basename $0`.log
@@ -87,18 +82,22 @@ do
     # Detect status change and activate/deactivate screensaver accordingly
     if [ "${result}" != "${last_result}" ]; then
         if [ "${result}" == "" ]; then
-	    echo "`date`: screen locked" >>${log_file}
-            sh -c "${screensaver_lock_command}" >>${error_file} 2>&1
-            sh -c "${im_away_command}" >>${error_file} 2>&1
-	    poll_time=$poll_time_out
+
+	    # Perform another scan to avoid "false negatives" and temporary scan problems
+	        sleep 5; result=`hcitool name $macaddress` >>${error_file} 2>&1
+
+            if [ "${result}" == "" ]; then
+		        echo "`date`: screen locked" >>${log_file}
+		        sh -c "${screensaver_lock_command}" >>${error_file} 2>&1
+		        poll_time=$poll_time_out
+	        fi
         else
-	    echo "`date`: screen unlocked" >>${log_file}
+	        echo "`date`: screen unlocked" >>${log_file}
             sh -c "${screensaver_unlock_command}" >>${error_file} 2>&1
-            sh -c "${im_available_command}" >>${error_file} 2>&1
-	    poll_time=$poll_time_in
-	fi
+	        poll_time=$poll_time_in
+	    fi
     fi
-    
+
     # Save the status
     last_result=$result
 
